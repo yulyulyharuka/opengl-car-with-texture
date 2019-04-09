@@ -1,0 +1,12 @@
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(391,5): warning MSB8028: The intermediate directory (Debug\) contains files shared from another project (OpenGLajg.vcxproj, PentagonShader.vcxproj).  This can lead to incorrect clean and rebuild behavior.
+  application.cpp
+d:\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(214): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(278): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(304): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+d:\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(305): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+d:\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(309): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(310): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(311): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+d:\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(312): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+d:\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(339): warning C4244: '-=': conversion from 'double' to 'float', possible loss of data
+  OpenGLajg.vcxproj -> D:\IF-Semester-6\Grafikom\OpenGL\Car\Debug\CarTexture.exe
