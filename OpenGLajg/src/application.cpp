@@ -6,9 +6,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/ext.hpp>
+#include <glm/gtx/string_cast.hpp>
 
+#include "Particle.h"
 #include "shader.h"
 
+#include <vector>
 #include <iostream>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -38,6 +42,12 @@ float fov = 45.0f;
 float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
+glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+
+std::vector<Rain> rains;
+std::vector<Smoke> smokes;
+unsigned int nr_particles = 5000;
+
 int main()
 {
 	// glfw: initialize and configure
@@ -47,12 +57,8 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-#ifdef __APPLE__
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // uncomment this statement to fix compilation on OS X
-#endif
-
-														 // glfw window creation
-														 // --------------------
+	// glfw window creation
+	// --------------------
 	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
 	if (window == NULL)
 	{
@@ -83,66 +89,69 @@ int main()
 	// build and compile our shader zprogram
 	// ------------------------------------
 	Shader squareShader("../OpenGLajg/src/vertex.vs", "../OpenGLajg/src/fragment.fs");
+	Shader lightingShader("../OpenGLajg/src/basic_lighting.vs", "../OpenGLajg/src/basic_lighting.fs");
+	Shader lampShader("../OpenGLajg/src/lamp.vs", "../OpenGLajg/src/lamp.fs");
+	Shader particleShader("../OpenGLajg/src/particle.vs", "../OpenGLajg/src/particle.fs");
 
 	// set up vertex data (and buffer(s)) and configure vertex attributes
 	// ------------------------------------------------------------------
 	float vertices[] = {
-		-0.5f, -0.7f,  0.0f, 1.0f, 1.0f,  1.0f, 0.0f, 0.0f, //0
-		 0.5f, -0.7f,  0.0f, 1.0f, 1.0f,  1.0f, 1.0f, 0.0f, //1
-		-0.5f, -0.2f,  0.0f, 1.0f, 1.0f,  1.0f, 0.0f, 1.0f, //2
-		 0.5f, -0.2f,  0.0f, 1.0f, 1.0f,  1.0f, 1.0f, 1.0f, //3
-		 0.5f, -0.7f, -0.5f, 1.0f, 1.0f,  1.0f, 0.0f, 1.0f,//4
-		 0.5f, -0.2f, -0.5f, 1.0f, 1.0f,  1.0f, 0.0f, 0.0f,//5
-		-0.5f, -0.2f, -0.5f, 1.0f, 1.0f,  1.0f, 1.0f, 0.0f,//6
-		-0.5f, -0.7f, -0.5f, 1.0f, 1.0f,  1.0f, 1.0f, 1.0f,//7
-		 0.5f,  0.2f, -0.65f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,//8
-		-0.5f,  0.2f, -0.65f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,//9
-		-0.5f,  0.2f, -1.5f, 1.0f, 1.0f,  1.0f, 0.0f, 1.0f,//10
-		 0.5f,  0.2f, -1.5f, 1.0f, 1.0f,  1.0f, 1.0f, 1.0f,//11
-		 0.5f, -0.7f, -1.5f, 1.0f, 1.0f,  1.0f, 1.0f, 1.0f,//12
-		-0.5f, -0.7f, -1.5f, 1.0f, 1.0f,  1.0f, 0.0f, 1.0f,//13
-		 0.45f, -0.2f, -0.499f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f,//14
-		-0.45f, -0.2f, -0.499f, 0.77f, 1.0f,  1.0f, 0.0f, 1.0f,//15
-		0.45f,  0.15f, -0.63f, 0.77f, 1.0f,  1.0f, 1.0f, 1.0f,//16
-		-0.45f,  0.15f, -0.63f, 0.77f, 1.0f,  1.0f, 1.0f, 0.0f,//17
+		-0.5f, -0.7f,  0.0f, 1.0f, 1.0f,  1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, //0
+		 0.5f, -0.7f,  0.0f, 1.0f, 1.0f,  1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,//1
+		-0.5f, -0.2f,  0.0f, 1.0f, 1.0f,  1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,//2
+		 0.5f, -0.2f,  0.0f, 1.0f, 1.0f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,//3
+		 0.5f, -0.7f, -0.5f, 1.0f, 1.0f,  1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,//4
+		 0.5f, -0.2f, -0.5f, 1.0f, 1.0f,  1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,//5
+		-0.5f, -0.2f, -0.5f, 1.0f, 1.0f,  1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,//6
+		-0.5f, -0.7f, -0.5f, 1.0f, 1.0f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,//7
+		 0.5f,  0.2f, -0.65f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,//8
+		-0.5f,  0.2f, -0.65f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,//9
+		-0.5f,  0.2f, -1.5f, 1.0f, 1.0f,  1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,//10
+		 0.5f,  0.2f, -1.5f, 1.0f, 1.0f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,//11
+		 0.5f, -0.7f, -1.5f, 1.0f, 1.0f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,//12
+		-0.5f, -0.7f, -1.5f, 1.0f, 1.0f,  1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,//13
+		 0.45f, -0.2f, -0.499f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,//14
+		-0.45f, -0.2f, -0.499f, 0.77f, 1.0f,  1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,//15
+		0.45f,  0.15f, -0.63f, 0.77f, 1.0f,  1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,//16
+		-0.45f,  0.15f, -0.63f, 0.77f, 1.0f,  1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,//17
 
-		 0.5f,  -0.2f, -1.5f, 1.0f, 1.0f,  1.0f, 1.0f, 0.0f,//18
-		 -0.5f, -0.2f, -1.5f, 1.0f, 1.0f,  1.0f, 0.0f, 0.0f,// 19
+		 0.5f,  -0.2f, -1.5f, 1.0f, 1.0f,  1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,//18
+		 -0.5f, -0.2f, -1.5f, 1.0f, 1.0f,  1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,// 19
 
 		 //0.51f,  0.15f, -0.7f, 0.77f, 1.0f, 1.0f, 0.0f, 0.0f,//8 20
 		 //0.51f,  0.15f, -1.4f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f,//11 21
 		 //0.51f, -0.15f, -0.6f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f,//5 22
 		 //0.51f,  -0.15f, -1.4f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f,//18 23
 
-		 0.501f,  0.15f, -0.7f, 0.77f, 1.0f, 1.0f, 0.0f, 0.0f,//8 20
-		 0.501f,  0.15f, -1.0f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f,//11 21
-		 0.501f, -0.15f, -0.6f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f,//5 22
-		 0.501f,  -0.15f, -1.0f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f,//18 23
+		 0.501f,  0.15f, -0.7f, 0.77f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,//8 20
+		 0.501f,  0.15f, -1.0f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,//11 21
+		 0.501f, -0.15f, -0.6f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,//5 22
+		 0.501f,  -0.15f, -1.0f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,//18 23
 
-		 0.501f,  0.15f, -1.1f, 0.77f, 1.0f, 1.0f, 0.0f, 0.0f,//8 24
-		 0.501f,  0.15f, -1.45f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f,//11 25
-		 0.501f, -0.15f, -1.1f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f,//5 26
-		 0.501f,  -0.15f, -1.45f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f,//18 27
+		 0.501f,  0.15f, -1.1f, 0.77f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,//8 24
+		 0.501f,  0.15f, -1.45f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,//11 25
+		 0.501f, -0.15f, -1.1f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,//5 26
+		 0.501f,  -0.15f, -1.45f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,//18 27
 
-		 -0.501f,  0.15f, -0.7f, 0.77f, 1.0f, 1.0f, 0.0f, 0.0f,//8 28
-		 -0.501f,  0.15f, -1.0f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f,//11 29
-		 -0.501f, -0.15f, -0.6f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f,//5 30
-		 -0.501f,  -0.15f, -1.0f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f,//18 31
+		 -0.501f,  0.15f, -0.7f, 0.77f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,//8 28
+		 -0.501f,  0.15f, -1.0f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,//11 29
+		 -0.501f, -0.15f, -0.6f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,//5 30
+		 -0.501f,  -0.15f, -1.0f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,//18 31
 
-		 -0.501f,  0.15f, -1.1f, 0.77f, 1.0f, 1.0f, 0.0f, 0.0f,//8 32
-		 -0.501f,  0.15f, -1.45f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f,//11 33
-		 -0.501f, -0.15f, -1.1f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f,//5 34
-		 -0.501f,  -0.15f, -1.45f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f,//18 35
+		 -0.501f,  0.15f, -1.1f, 0.77f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,//8 32
+		 -0.501f,  0.15f, -1.45f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,//11 33
+		 -0.501f, -0.15f, -1.1f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,//5 34
+		 -0.501f,  -0.15f, -1.45f, 0.77f, 1.0f,  1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,//18 35
 
-		 -0.45f,  0.15f, -1.501f, 0.77f, 1.0f, 1.0f, 0.0f, 0.0f,//10 36
-		 0.45f,  0.15f, -1.501f, 0.77f, 1.0f, 1.0f, 0.0f, 0.0f,//11 37
-		 0.45f, -0.2f, -1.501f, 0.77f, 1.0f, 1.0f, 0.0f, 0.0f,//12 38
-		 -0.45f, -0.2f, -1.501f, 0.77f, 1.0f, 1.0f, 0.0f, 0.0f,//13 39
+		 -0.45f,  0.15f, -1.501f, 0.77f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,//10 36
+		 0.45f,  0.15f, -1.501f, 0.77f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,//11 37
+		 0.45f, -0.2f, -1.501f, 0.77f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,//12 38
+		 -0.45f, -0.2f, -1.501f, 0.77f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,//13 39
 
-		 -0.4f, -0.425f,  0.01f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, //40
-		 0.4f, -0.425f,  0.01f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, //41
-		 -0.4f, -0.25f,  0.01f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, //42
-		 0.4f, -0.25f,  0.01f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, //43
+		 -0.4f, -0.425f,  0.01f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,//40
+		 0.4f, -0.425f,  0.01f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,//41
+		 -0.4f, -0.25f,  0.01f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,//42
+		 0.4f, -0.25f,  0.01f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f//43
 	};
 	unsigned int indices[] = {
 		0, 1, 2,
@@ -209,14 +218,20 @@ int main()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+
 	// color attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+
 	// texture attribute
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(6 * sizeof(float)));
 	glEnableVertexAttribArray(2);
+
+	// normal attribute
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(8 * sizeof(float)));
+	glEnableVertexAttribArray(3);
 
 	//CIRCLES
 	glGenVertexArrays(1, &VAOC);
@@ -224,24 +239,24 @@ int main()
 	glGenBuffers(1, &EBOC);
 	glBindVertexArray(VAOC);
 	float verticesCircle[] = {
-		0.4f, 0.4f, 0.0f, 0.0f, 0.0f,  0.0f, //0 tengah
-		0.4f, 0.01f, 0.0f, 0.0f, 0.0f,  0.0f, //1 atas
-		0.675f, 0.125f, 0.0f, 0.0f, 0.0f,  0.0f, //2 kanan atas
-		0.79f, 0.4f, 0.0f, 0.0f, 0.0f,  0.0f, //3 kanan
-		0.675f, 0.675f, 0.0f, 0.0f, 0.0f,  0.0f, //4 kanan bawah
-		0.4f, 0.79f, 0.0f, 0.0f, 0.0f,  0.0f, //5 bawah
-		0.125f, 0.675f, 0.0f, 0.0f, 0.0f,  0.0f, //6 kiri bawah
-		0.001f, 0.4f, 0.0f, 0.0f, 0.0f,  0.0f, //7 kiri
-		0.125f, 0.125f, 0.0f, 0.0f, 0.0f,  0.0f, //8 kiri atas
+		0.4f, 0.4f, 0.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,//0 tengah
+		0.4f, 0.01f, 0.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,//1 atas
+		0.675f, 0.125f, 0.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,//2 kanan atas
+		0.79f, 0.4f, 0.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,//3 kanan
+		0.675f, 0.675f, 0.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,//4 kanan bawah
+		0.4f, 0.79f, 0.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,//5 bawah
+		0.125f, 0.675f, 0.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,//6 kiri bawah
+		0.001f, 0.4f, 0.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,//7 kiri
+		0.125f, 0.125f, 0.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,//8 kiri atas
 
-		0.4f, 0.01f, -0.3f, 0.0f, 0.0f,  0.0f, //9 atas
-		0.675f, 0.125f, -0.3f, 0.0f, 0.0f,  0.0f, //10 kanan atas
-		0.79f, 0.4f, -0.3f, 0.0f, 0.0f,  0.0f, //11 kanan
-		0.675f, 0.675f, -0.3f, 0.0f, 0.0f,  0.0f, //12 kanan bawah
-		0.4f, 0.79f, -0.3f, 0.0f, 0.0f,  0.0f, //13 bawah
-		0.125f, 0.675f, -0.3f, 0.0f, 0.0f,  0.0f, //14 kiri bawah
-		0.001f, 0.4f, -0.3f, 0.0f, 0.0f,  0.0f, //15 kiri
-		0.125f, 0.125f, -0.3f, 0.0f, 0.0f,  0.0f, //16 kiri atas
+		0.4f, 0.01f, -0.3f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,//9 atas
+		0.675f, 0.125f, -0.3f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,//10 kanan atas
+		0.79f, 0.4f, -0.3f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,//11 kanan
+		0.675f, 0.675f, -0.3f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,//12 kanan bawah
+		0.4f, 0.79f, -0.3f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,//13 bawah
+		0.125f, 0.675f, -0.3f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,//14 kiri bawah
+		0.001f, 0.4f, -0.3f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f,//15 kiri
+		0.125f, 0.125f, -0.3f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, 0.0f//16 kiri atas
 	};
 	unsigned int indicesCircle[] = {
 		0,1,2,
@@ -287,11 +302,16 @@ int main()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicesCircle), indicesCircle, GL_STATIC_DRAW);
 
 	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+
 	// texture coord attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+
+	// normal attribute
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
 	//Wheel Glass
 	glGenVertexArrays(1, &VAOWG);
@@ -299,24 +319,24 @@ int main()
 	glGenBuffers(1, &EBOWG);
 	glBindVertexArray(VAOWG);
 	float verticesWheelGlass[] = {
-		0.4f, 0.4f, 0.0f, 1.0f, 1.0f,  1.0f, //0 tengah
-		0.4f, 0.01f, 0.0f, 1.0f, 1.0f,  1.0f, //1 atas
-		0.675f, 0.125f, 0.0f, 1.0f, 1.0f,  1.0f, //2 kanan atas
-		0.79f, 0.4f, 0.0f, 1.0f, 1.0f,  1.0f, //3 kanan
-		0.675f, 0.675f, 0.0f, 1.0f, 1.0f,  1.0f, //4 kanan bawah
-		0.4f, 0.79f, 0.0f, 1.0f, 1.0f,  1.0f, //5 bawah
-		0.125f, 0.675f, 0.0f, 1.0f, 1.0f,  1.0f, //6 kiri bawah
-		0.001f, 0.4f, 0.0f, 1.0f, 1.0f,  1.0f, //7 kiri
-		0.125f, 0.125f, 0.0f, 1.0f, 1.0f,  1.0f, //8 kiri atas
+		0.4f, 0.4f, 0.0f, 1.0f, 1.0f,  1.0f, 0.0f, 1.0f, 0.0f,//0 tengah
+		0.4f, 0.01f, 0.0f, 1.0f, 1.0f,  1.0f, 0.0f, 1.0f, 0.0f,//1 atas
+		0.675f, 0.125f, 0.0f, 1.0f, 1.0f,  1.0f, 0.0f, 1.0f, 0.0f,//2 kanan atas
+		0.79f, 0.4f, 0.0f, 1.0f, 1.0f,  1.0f, 0.0f, 1.0f, 0.0f,//3 kanan
+		0.675f, 0.675f, 0.0f, 1.0f, 1.0f,  1.0f, 0.0f, 1.0f, 0.0f,//4 kanan bawah
+		0.4f, 0.79f, 0.0f, 1.0f, 1.0f,  1.0f, 0.0f, 1.0f, 0.0f,//5 bawah
+		0.125f, 0.675f, 0.0f, 1.0f, 1.0f,  1.0f, 0.0f, 1.0f, 0.0f,//6 kiri bawah
+		0.001f, 0.4f, 0.0f, 1.0f, 1.0f,  1.0f, 0.0f, 1.0f, 0.0f,//7 kiri
+		0.125f, 0.125f, 0.0f, 1.0f, 1.0f,  1.0f, 0.0f, 1.0f, 0.0f,//8 kiri atas
 
-		0.24f, 0.24f, 0.01f, 0.0f, 0.0f,  0.0f, //9
-		0.4f, 0.165f, 0.01f, 0.0f, 0.0f,  0.0f, //10
-		0.585f, 0.215f, 0.01f, 0.0f, 0.0f,  0.0f, //11
-		0.63f, 0.4f, 0.01f, 0.0f, 0.0f,  0.0f, //12
-		0.55f, 0.55f, 0.01f, 0.0f, 0.0f,  0.0f, //13
-		0.4f, 0.62f, 0.01f, 0.0f, 0.0f,  0.0f, //14
-		0.26f, 0.54f, 0.01f, 0.0f, 0.0f,  0.0f, //15
-		0.18f, 0.4f, 0.01f, 0.0f, 0.0f,  0.0f, //16
+		0.24f, 0.24f, 0.01f, 0.0f, 0.0f,  0.0f, -1.0f, 0.0f, 0.0f, //9
+		0.4f, 0.165f, 0.01f, 0.0f, 0.0f,  0.0f, -1.0f, 0.0f, 0.0f,//10
+		0.585f, 0.215f, 0.01f, 0.0f, 0.0f,  0.0f, -1.0f, 0.0f, 0.0f,//11
+		0.63f, 0.4f, 0.01f, 0.0f, 0.0f,  0.0f, -1.0f, 0.0f, 0.0f,//12
+		0.55f, 0.55f, 0.01f, 0.0f, 0.0f,  0.0f, -1.0f, 0.0f, 0.0f,//13
+		0.4f, 0.62f, 0.01f, 0.0f, 0.0f,  0.0f, -1.0f, 0.0f, 0.0f,//14
+		0.26f, 0.54f, 0.01f, 0.0f, 0.0f,  0.0f, -1.0f, 0.0f, 0.0f,//15
+		0.18f, 0.4f, 0.01f, 0.0f, 0.0f,  0.0f, -1.0f, 0.0f, 0.0f//16
 	};
 	unsigned int indicesWheelGlass[] = {
 		0,1,2,
@@ -340,14 +360,19 @@ int main()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOWG);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicesWheelGlass), indicesWheelGlass, GL_STATIC_DRAW);
 	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 	// color attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+
 	// texture attribute
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(6 * sizeof(float)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(6 * sizeof(float)));
 	glEnableVertexAttribArray(2);
+
+	// normal attribute
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(3);
 
 	//Front Lamp
 	glGenVertexArrays(1, &VAOFL);
@@ -355,15 +380,15 @@ int main()
 	glGenBuffers(1, &EBOFL);
 	glBindVertexArray(VAOFL);
 	float verticesFrontLamp[] = {
-		0.4f, 0.4f, 0.0f, 1.0f, 1.0f,  0.0f, //0 tengah
-		0.4f, 0.01f, 0.0f, 1.0f, 1.0f,  0.0f, //1 atas
-		0.675f, 0.125f, 0.0f, 1.0f, 1.0f,  0.0f, //2 kanan atas
-		0.79f, 0.4f, 0.0f, 1.0f, 1.0f,  0.0f, //3 kanan
-		0.675f, 0.675f, 0.0f, 1.0f, 1.0f,  0.0f, //4 kanan bawah
-		0.4f, 0.79f, 0.0f, 1.0f, 1.0f,  0.0f, //5 bawah
-		0.125f, 0.675f, 0.0f, 1.0f, 1.0f,  0.0f, //6 kiri bawah
-		0.001f, 0.4f, 0.0f, 1.0f, 1.0f,  0.0f, //7 kiri
-		0.125f, 0.125f, 0.0f, 1.0f, 1.0f,  0.0f, //8 kiri atas
+		0.4f, 0.4f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, 1.0f, 0.0f,//0 tengah
+		0.4f, 0.01f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, 1.0f, 0.0f,//1 atas
+		0.675f, 0.125f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, 1.0f, 0.0f,//2 kanan atas
+		0.79f, 0.4f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, 1.0f, 0.0f,//3 kanan
+		0.675f, 0.675f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, 1.0f, 0.0f,//4 kanan bawah
+		0.4f, 0.79f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, 1.0f, 0.0f,//5 bawah
+		0.125f, 0.675f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, 1.0f, 0.0f,//6 kiri bawah
+		0.001f, 0.4f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, 1.0f, 0.0f,//7 kiri
+		0.125f, 0.125f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, 1.0f, 0.0f,//8 kiri atas
 	};
 	unsigned int indicesFrontLamp[] = {
 		0,1,2,
@@ -387,14 +412,105 @@ int main()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOFL);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicesFrontLamp), indicesFrontLamp, GL_STATIC_DRAW);
 	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 	// color attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
-	// texture attribute
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
+
+	// normal attribute
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(3);
+
+	unsigned int VBOL, lightVAO;
+	glGenVertexArrays(1, &lightVAO);
+	glBindVertexArray(lightVAO);
+	glGenBuffers(1, &VBOL);
+	float lampu[] = {
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+
+		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+	};
+
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBOL);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(lampu), lampu, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	unsigned int VBOp, particleVAO, particleEBO;
+	glGenVertexArrays(1, &particleVAO);
+	glBindVertexArray(particleVAO);
+	glGenBuffers(1, &particleEBO);
+	glGenBuffers(1, &VBOp);
+	float base_particle[] = {
+		-0.5f, -0.5f, 0.0f,
+		 0.5f, -0.5f, 0.0f,
+		 0.0f, 0.5f, 0.0f,
+
+		-0.5f, -0.5f, 0.5f,
+		 0.5f, -0.5f, 0.5f,
+		 0.0f, 0.5f, 0.5f
+	};
+
+	unsigned int particle_indices[] = {
+		0, 1, 2,
+		3, 4, 5,
+		0, 3, 2,
+		2, 5, 3,
+		0, 3, 1,
+		1, 4, 3,
+		2, 5, 1,
+		1, 4, 5
+	};
+	glBindBuffer(GL_ARRAY_BUFFER, VBOp);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(base_particle), base_particle, GL_STATIC_DRAW);
+
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, particleEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(particle_indices), particle_indices, GL_STATIC_DRAW);
+	// position attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glEnableVertexAttribArray(0);
+
 
 	// load and create a texture 
 	// -------------------------
@@ -430,6 +546,7 @@ int main()
 	// -------------------------------------------------------------------------------------------
 	squareShader.use();
 	squareShader.setInt("texture1", 0);
+	
 
 
 	// render loop
@@ -442,6 +559,13 @@ int main()
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
+		for (unsigned int i = 0; i < nr_particles; i++) {
+			float x = (rand() % 200) / 100.0 - 1;
+			float y = (rand() % 200) / 100.0 - 1;
+			float z = (rand() % 200) / 100.0 - 1;
+			rains.push_back(Rain(glm::vec4(x, y, z, 0.0), glm::vec4(0.0f, -0.01f, 0.0f, 0.0f)));
+		}
+
 		// input
 		// -----
 		processInput(window);
@@ -450,6 +574,13 @@ int main()
 		// ------
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		// be sure to activate shader when setting uniforms/drawing objects
+		lightingShader.use();
+		lightingShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+		lightingShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+		lightingShader.setVec3("lightPos", lightPos);
+		lightingShader.setVec3("viewPos", cameraPos);
 
 		// bind textures on corresponding texture units
 		glActiveTexture(GL_TEXTURE0);
@@ -552,6 +683,37 @@ int main()
 		squareShader.setMat4("model", modelFrontLamp);
 		glDrawElements(GL_TRIANGLES, sizeof(indicesFrontLamp) / 5 * sizeof(int), GL_UNSIGNED_INT, 0);
 
+		// also draw the lamp object
+		lampShader.use();
+		lampShader.setMat4("projection", projection);
+		lampShader.setMat4("view", view);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, lightPos);
+		model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
+		lampShader.setMat4("model", model);
+
+		glBindVertexArray(lightVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		particleShader.use();
+		glm::mat4 modelParticle = glm::mat4(1.0f);
+		glm::mat4 transform = glm::mat4(1.0);
+		transform = glm::scale(transform, glm::vec3(0.0025, 0.005, 0.005));
+		glm::vec4 color = glm::vec4(0.0f, 1.0f, 1.0f, 1.0f);
+
+		particleShader.setMat4("model", modelParticle);
+		particleShader.setMat4("projection", projection);
+		particleShader.setMat4("view", view);
+		particleShader.setMat4("transform", transform);
+		particleShader.setVec4("color", color);
+		glBindVertexArray(particleVAO);
+
+		for (int i = 0; i < nr_particles; i++) {
+			particleShader.setVec4("offset", rains[i].offset);
+			glDrawElements(GL_TRIANGLES, 24, GL_UNSIGNED_INT, 0);
+			rains[i].update();
+		}
+
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
 		glfwSwapBuffers(window);
@@ -562,6 +724,8 @@ int main()
 	// ------------------------------------------------------------------------
 	glDeleteVertexArrays(1, &VAOSQ);
 	glDeleteBuffers(1, &VBO);
+	glDeleteVertexArrays(1, &lightVAO);
+	glDeleteBuffers(1, &VBOL);
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// ------------------------------------------------------------------

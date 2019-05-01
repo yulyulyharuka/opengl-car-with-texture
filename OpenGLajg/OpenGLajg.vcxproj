@@ -127,9 +127,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\shader.h" />
+    <ClInclude Include="src\Particle.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\fragment.fs" />
+    <None Include="src\particle.fs" />
+    <None Include="src\particle.vs" />
     <None Include="src\vertex.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

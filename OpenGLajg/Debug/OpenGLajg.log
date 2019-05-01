@@ -1,12 +1,17 @@
 ﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(391,5): warning MSB8028: The intermediate directory (Debug\) contains files shared from another project (OpenGLajg.vcxproj, PentagonShader.vcxproj).  This can lead to incorrect clean and rebuild behavior.
   application.cpp
-d:\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(441): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-d:\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(579): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-d:\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(606): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-d:\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(607): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-d:\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(611): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-d:\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(612): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-d:\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(613): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-d:\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(614): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-d:\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(641): warning C4244: '-=': conversion from 'double' to 'float', possible loss of data
-  OpenGLajg.vcxproj -> D:\IF-Semester-6\Grafikom\OpenGL\Car\Debug\CarTexture.exe
+d:\teknik informatika\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(558): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\teknik informatika\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(563): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\teknik informatika\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(564): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\teknik informatika\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(565): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\teknik informatika\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(711): warning C4018: '<': signed/unsigned mismatch
+d:\teknik informatika\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(743): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\teknik informatika\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(770): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+d:\teknik informatika\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(771): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+d:\teknik informatika\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(775): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\teknik informatika\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(776): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\teknik informatika\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(777): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+d:\teknik informatika\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(778): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+d:\teknik informatika\if-semester-6\grafikom\opengl\car\openglajg\src\application.cpp(805): warning C4244: '-=': conversion from 'double' to 'float', possible loss of data
+LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
+  OpenGLajg.vcxproj -> D:\Teknik Informatika\IF-Semester-6\Grafikom\OpenGL\Car\Debug\CarTexture.exe

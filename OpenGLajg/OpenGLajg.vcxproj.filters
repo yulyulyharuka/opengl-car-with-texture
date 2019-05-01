@@ -26,9 +26,14 @@
     <ClInclude Include="src\shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\Particle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\vertex.vs" />
     <None Include="src\fragment.fs" />
+    <None Include="src\particle.vs" />
+    <None Include="src\particle.fs" />
   </ItemGroup>
 </Project>

@@ -1,13 +1,9 @@
 #version 330 core
 out vec4 FragColor;
 
-in vec2 TexCoord;
-in vec3 FragPos; 
 in vec3 Normal;  
-
-// texture samplers
-uniform sampler2D texture1;
-
+in vec3 FragPos;  
+  
 uniform vec3 lightPos; 
 uniform vec3 viewPos; 
 uniform vec3 lightColor;
@@ -15,7 +11,7 @@ uniform vec3 objectColor;
 
 void main()
 {
-	// ambient
+    // ambient
     float ambientStrength = 0.1;
     vec3 ambient = ambientStrength * lightColor;
   	
@@ -31,8 +27,7 @@ void main()
     vec3 reflectDir = reflect(-lightDir, norm);  
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
     vec3 specular = specularStrength * spec * lightColor;  
-
-	vec3 result = (ambient + diffuse + specular) * objectColor;
-
-	FragColor = texture(texture1, TexCoord) * vec4(result, 1.0);
-}
+        
+    vec3 result = (ambient + diffuse + specular) * objectColor;
+    FragColor = vec4(result, 1.0);
+} 
